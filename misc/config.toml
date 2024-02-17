@@ -1,0 +1,4 @@
+token = "token here
+owners = [130012001236811776]
+database_url = "mongodb://<user>:<pass>@localhost:27017/?authMechanism=DEFAULT"
+# dev_guild = <guild_id>

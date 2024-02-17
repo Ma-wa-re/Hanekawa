@@ -1,0 +1,25 @@
+services:
+  hanekawa-db:
+    image: mongo:latest
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - 27017:27017
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 120s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  hanekawa-core:
+    image: hanekawa:latest
+    build: ./src
+    stop_signal: SIGINT
+    depends_on:
+      hanekawa-db:
+        condition: service_healthy
+    volumes:
+      - <log folder>:/logs
+      - <config folder>:/config
