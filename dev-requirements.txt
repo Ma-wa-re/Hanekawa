@@ -1,0 +1,2 @@
+# Linting / Formatting
+ruff==0.2.1
