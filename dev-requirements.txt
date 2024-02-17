@@ -1,2 +1,5 @@
 # Linting / Formatting
 ruff==0.2.1
+
+# Type Hints
+motor-types==1.0.0b4

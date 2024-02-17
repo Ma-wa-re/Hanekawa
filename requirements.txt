@@ -1,0 +1,4 @@
+# Hanekawa requirements
+-r src/requirements.txt
+# Dev requirements
+-r dev-requirements.txt
