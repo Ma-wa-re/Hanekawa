@@ -5,11 +5,12 @@ from datetime import datetime, timedelta
 import discord
 from discord.ext import commands
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from typing import Optional
 
 from .config import Config
 
 logger = logging.getLogger(__name__)
+
+EXTENSIONS = ["Hanekawa.extensions.misc", "Hanekawa.extensions.reporting"]
 
 
 class Bot(commands.Bot):
@@ -20,9 +21,9 @@ class Bot(commands.Bot):
 
     def __init__(self, config: Config):
         self.config: Config = config
-        self.start_time: datetime = datetime.utcnow()
+        self.start_time: datetime = datetime.now()
         self.db_client: AsyncIOMotorClient = AsyncIOMotorClient(self.config.database_url)
-        self.db: Optional[AsyncIOMotorDatabase]
+        self.db: AsyncIOMotorDatabase | None = None
 
         super().__init__(
             command_prefix=commands.when_mentioned,
@@ -35,7 +36,7 @@ class Bot(commands.Bot):
     def uptime(self) -> timedelta:
         """Gets bot's uptime"""
 
-        return datetime.utcnow() - self.start_time
+        return datetime.now() - self.start_time
 
     def run_with_token(self) -> None:
         """Runs the bot using the run command using the token given in the config"""
@@ -47,9 +48,27 @@ class Bot(commands.Bot):
             self.run(self.config.token)
 
     async def close(self) -> None:
+        """On close of the discord connect also close the connection to the DB"""
         self.db_client.close()
 
         await super().close()
+
+    async def setup_hook(self) -> None:
+        # Connect to DB
+        logger.debug(await self.db_client.list_database_names())
+        self.db = self.db_client.hanekawa
+
+        # Load the extensions
+        for extension in EXTENSIONS:
+            logger.info(f"Loading extension: {extension}")
+            await self.load_extension(extension)
+
+        # Sync to dev guild if one is configured
+        if self.config.dev_guild:
+            guild = discord.Object(self.config.dev_guild)
+            self.tree.copy_global_to(guild=guild)
+            # followed by syncing to the testing guild.
+            await self.tree.sync(guild=guild)
 
     async def on_ready(self) -> None:
         pyver = sys.version_info
