@@ -7,6 +7,7 @@ from discord.ext import commands
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 from .config import Config
+from .settings_db import SettingsTable
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class Bot(commands.Bot):
         self.start_time: datetime = datetime.now()
         self.db_client: AsyncIOMotorClient = AsyncIOMotorClient(self.config.database_url)
         self.db: AsyncIOMotorDatabase | None = None
+        self.settings_table: SettingsTable | None
 
         super().__init__(
             command_prefix=commands.when_mentioned,
@@ -57,6 +59,7 @@ class Bot(commands.Bot):
         # Connect to DB
         logger.debug(await self.db_client.list_database_names())
         self.db = self.db_client.hanekawa
+        self.settings_table = SettingsTable(self.db)
 
         # Load the extensions
         for extension in EXTENSIONS:

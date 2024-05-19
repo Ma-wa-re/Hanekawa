@@ -1,12 +1,12 @@
 import logging
 import discord
-from motor.motor_asyncio import AsyncIOMotorCollection
+from Hanekawa.settings_db import SettingsTable, SettingsRecord
 
 logger = logging.getLogger(__name__)
 
 
 class FourmChannelSelect(discord.ui.ChannelSelect):
-    def __init__(self, settings_table: AsyncIOMotorCollection):
+    def __init__(self, settings_table: SettingsTable):
         self.settings_table = settings_table
         super().__init__(channel_types=[discord.ChannelType.forum])
 
@@ -22,16 +22,15 @@ class FourmChannelSelect(discord.ui.ChannelSelect):
             )
 
         # Check settings table for existing config
-        settings_entry = await self.settings_table.find_one({"guild_id": interaction.guild_id})
+        settings_record = await self.settings_table.get(interaction.guild_id)
 
-        if settings_entry:
-            logger.info(f"Updating setting config for reporing for {interaction.guild_id}")
-            _id = settings_entry.pop("_id")
-            settings_entry["report_channel"] = fourm.id
-            await self.settings_table.replace_one({"_id": _id}, settings_entry)
+        if settings_record:
+            settings_record.report_channel = fourm.id
+            await self.settings_table.set(settings_record)
         else:
             logger.info(f"Creating setting config for reporing for {interaction.guild_id}")
-            await self.settings_table.insert_one({"guild_id": interaction.guild_id, "report_channel": fourm.id})
+            settings_record = SettingsRecord(guild_id=interaction.guild_id, report_channel=fourm.id)
+            await self.settings_table.set(settings_record)
 
         await interaction.response.send_message(
             content=f"{fourm.mention} has been configured as the report channel", ephemeral=True
@@ -39,7 +38,7 @@ class FourmChannelSelect(discord.ui.ChannelSelect):
 
 
 class FourmChannelView(discord.ui.View):
-    def __init__(self, settings_table: AsyncIOMotorCollection):
+    def __init__(self, settings_table: SettingsTable):
         super().__init__()
 
         # Adds the dropdown to our view object.
@@ -47,7 +46,7 @@ class FourmChannelView(discord.ui.View):
 
 
 class MessageReport(discord.ui.Modal, title="Message Report"):
-    def __init__(self, settings_table: AsyncIOMotorCollection, message: discord.Message):
+    def __init__(self, settings_table: SettingsTable, message: discord.Message):
         self.settings_table = settings_table
         self.message = message
 
@@ -64,13 +63,12 @@ class MessageReport(discord.ui.Modal, title="Message Report"):
     async def on_submit(self, interaction: discord.Interaction):
         # Check settings table for existing config and get fourm channel
         try:
-            settings_entry = await self.settings_table.find_one({"guild_id": interaction.guild_id})
-            logger.info(settings_entry)
-            if settings_entry:
-                if "report_channel" in settings_entry:
-                    fourm = interaction.client.get_channel(settings_entry["report_channel"])
+            settings_record = await self.settings_table.get(interaction.guild_id)
+            if settings_record:
+                if settings_record.report_channel:
+                    fourm = interaction.client.get_channel(settings_record.report_channel)
 
-                    logger.info(fourm.name)
+                    logger.info(f"Report Fourm Channel for {interaction.guild_id}: {fourm.name}")
                     if fourm:
                         tag = [tag for tag in fourm.available_tags if tag.name == "report"][0]
                         embed = discord.Embed(title="Reported Message")
@@ -91,7 +89,7 @@ class MessageReport(discord.ui.Modal, title="Message Report"):
                         )
 
                     await interaction.response.send_message(
-                        "Thanks for the report!, Staff will get back to you about this", ephemeral=True
+                        "Thanks for the report! Staff will get back to you about this", ephemeral=True
                     )
                 else:
                     await interaction.response.send_message(
@@ -110,7 +108,7 @@ class MessageReport(discord.ui.Modal, title="Message Report"):
 
 
 class UserReport(discord.ui.Modal, title="User Report"):
-    def __init__(self, settings_table: AsyncIOMotorCollection, user: discord.Member):
+    def __init__(self, settings_table: SettingsTable, user: discord.Member):
         self.settings_table = settings_table
         self.user = user
 
@@ -127,13 +125,12 @@ class UserReport(discord.ui.Modal, title="User Report"):
     async def on_submit(self, interaction: discord.Interaction):
         # Check settings table for existing config and get fourm channel
         try:
-            settings_entry = await self.settings_table.find_one({"guild_id": interaction.guild_id})
-            logger.info(settings_entry)
-            if settings_entry:
-                if "report_channel" in settings_entry:
-                    fourm = interaction.client.get_channel(settings_entry["report_channel"])
+            settings_record = await self.settings_table.get(interaction.guild_id)
+            if settings_record:
+                if settings_record.report_channel:
+                    fourm = interaction.client.get_channel(settings_record.report_channel)
 
-                    logger.info(fourm.name)
+                    logger.info(f"Report Fourm Channel for {interaction.guild_id}: {fourm.name}")
                     if fourm:
                         tag = [tag for tag in fourm.available_tags if tag.name == "report"][0]
                         embed = discord.Embed(title="Reported User")
@@ -150,7 +147,7 @@ class UserReport(discord.ui.Modal, title="User Report"):
                         )
 
                     await interaction.response.send_message(
-                        "Thanks for the report!, Staff will get back to you about this", ephemeral=True
+                        "Thanks for the report! Staff will get back to you about this", ephemeral=True
                     )
                 else:
                     await interaction.response.send_message(
