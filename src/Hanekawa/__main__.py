@@ -45,9 +45,7 @@ if __name__ == "__main__":
 
     # Set up logging
     log_fmtr = logging.Formatter(LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
-    log_handler = TimedRotatingFileHandler(
-        filename=LOG_FILE, encoding="utf-8", mode=LOG_FILE_MODE, interval=7, when="d"
-    )
+    log_handler = TimedRotatingFileHandler(filename=LOG_FILE, encoding="utf-8", interval=7, when="d")
     log_handler.setFormatter(log_fmtr)
 
     log_level = logging.DEBUG if args.debug else logging.INFO
