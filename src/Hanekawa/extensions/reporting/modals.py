@@ -1,6 +1,7 @@
 import logging
+
 import discord
-from Hanekawa.settings_db import SettingsTable, SettingsRecord
+from Hanekawa.settings_db import SettingsRecord, SettingsTable
 
 logger = logging.getLogger(__name__)
 

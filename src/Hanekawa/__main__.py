@@ -1,7 +1,7 @@
 import argparse
 import logging
-from logging.handlers import TimedRotatingFileHandler
 import sys
+from logging.handlers import TimedRotatingFileHandler
 
 from pydantic import ValidationError
 from tomllib import TOMLDecodeError
